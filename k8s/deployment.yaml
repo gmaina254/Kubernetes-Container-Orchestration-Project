@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: node-app
+
+  template:
+    metadata:
+      labels:
+        app: node-app
+
+    spec:
+      containers:
+      - name: node-app
+
+        image: mainamichael/k8s-node-app:v1
+
+        ports:
+        - containerPort: 3000
+
+        env:
+        - name: APP_MESSAGE
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: APP_MESSAGE
+
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secret
+              key: DB_PASSWORD
+
+        resources:
+          requests:
+            cpu: "100m"
+          limits:
+            cpu: "200m"
+
+        volumeMounts:
+        - mountPath: /data
+          name: app-storage
+
+      volumes:
+      - name: app-storage
+        persistentVolumeClaim:
+          claimName: app-pvc
