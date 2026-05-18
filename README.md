@@ -1,142 +1,237 @@
 # Kubernetes Container Orchestration Project
 
-This repository demonstrates a simple Node.js application deployed to Kubernetes using common orchestration primitives.
-It includes a Dockerfile, a Node.js Express app, and Kubernetes manifests for Deployment, Service, ConfigMap, Secret, PersistentVolume, and PersistentVolumeClaim.
-
 ## Project Overview
 
-- **Application:** A Node.js Express app that returns a message and hostname.
-- **Docker image:** Built from `k8s-project/Dockerfile`.
-- **Kubernetes manifests:** Stored under `k8s/`.
-- **Demonstrated concepts:** deployment scaling, environment configuration, secrets, persistent storage, and service exposure.
+This project demonstrates the deployment and management of a containerized Node.js web application using Kubernetes. The application was deployed inside a Kubernetes cluster running on KIND (Kubernetes in Docker) using GitHub Codespaces.
 
-## Repository Structure
+The project covers important Kubernetes concepts such as Deployments, Services, ConfigMaps, Secrets, Persistent Volumes, Horizontal Pod Autoscaling (HPA), and monitoring.
 
-- `k8s-project/app.js` - Node.js app logic.
-- `k8s-project/package.json` - Node.js dependencies and start script.
-- `k8s-project/Dockerfile` - Docker image build instructions.
-- `k8s/configmap.yaml` - ConfigMap for application configuration.
-- `k8s/secret.yaml` - Secret for sensitive values.
-- `k8s/pv.yaml` - PersistentVolume definition.
-- `k8s/pvc.yaml` - PersistentVolumeClaim definition.
-- `k8s/deployment.yaml` - Deployment definition with 2 replicas.
-- `k8s/service.yaml` - ClusterIP Service exposing the application.
+---
 
-## Application Behavior
+# Technologies Used
 
-When the app receives a request at `/`, it:
+- Node.js
+- Docker
+- Kubernetes
+- KIND
+- GitHub Codespaces
+- Docker Hub
 
-1. Creates `/data` if needed.
-2. Appends a visit log line to `/data/visits.txt`.
-3. Responds with the configured message and pod hostname.
+---
 
-The app reads these Kubernetes-provided environment values:
+# Project Objectives
 
-- `APP_MESSAGE` from `ConfigMap`.
-- `DB_PASSWORD` from `Secret`.
+The application was designed to:
 
-## Kubernetes Resources Explained
+- Run inside Kubernetes Pods managed by a Deployment
+- Be exposed using a Kubernetes Service
+- Use ConfigMaps and Secrets for configuration management
+- Store data using Persistent Volumes and Persistent Volume Claims
+- Scale automatically using Horizontal Pod Autoscaler (HPA)
+- Monitor resource usage and logs using Kubernetes commands
 
-- `ConfigMap` (`app-config`): stores `APP_MESSAGE`.
-- `Secret` (`app-secret`): stores `DB_PASSWORD` as base64.
-- `PersistentVolume` (`app-pv`): hostPath-backed storage at `/tmp/app-data`.
-- `PersistentVolumeClaim` (`app-pvc`): requests `500Mi` storage.
-- `Deployment` (`node-app`): runs 2 replicas, injects ConfigMap and Secret values, mounts the PVC at `/data`, and sets CPU requests/limits.
-- `Service` (`node-service`): exposes pods on port `80` and routes to container port `3000`.
+---
 
-## Prerequisites
+# Kubernetes Cluster Setup
 
-- Docker or another container runtime.
-- A Kubernetes cluster (Minikube, Kind, Docker Desktop, or cloud cluster).
-- `kubectl` configured to the target cluster.
-- Optionally, `docker` access to build and push images.
+A Kubernetes cluster was created using KIND inside GitHub Codespaces.
 
-## Build and Deploy
-
-1. Build the Docker image from the app folder:
+## Verify Cluster
 
 ```bash
-cd k8s-project
+kubectl get nodes
+```
+
+---
+
+# Application Containerization
+
+The Node.js application was containerized using Docker.
+
+## Build Docker Image
+
+```bash
 docker build -t mainamichael/k8s-node-app:v1 .
 ```
 
-2. If your Kubernetes cluster does not share the local Docker daemon, push the image to a registry:
+## Push Docker Image
 
 ```bash
 docker push mainamichael/k8s-node-app:v1
 ```
 
-3. Apply the Kubernetes manifests in the correct order:
+Docker Image:
 
-```bash
-kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/secret.yaml
-kubectl apply -f k8s/pv.yaml
-kubectl apply -f k8s/pvc.yaml
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
+```text
+mainamichael/k8s-node-app:v1
 ```
-
-## Verification
-
-Check that the pods, PVC, and service are running:
-
-```bash
-kubectl get pods
-kubectl get pvc
-kubectl get pv
-kubectl get svc
-```
-
-View pod logs for deployment health:
-
-```bash
-kubectl logs -l app=node-app
-```
-
-To access the app from inside the cluster, use port forwarding:
-
-```bash
-kubectl port-forward svc/node-service 8080:80
-```
-
-Then open `http://localhost:8080` in a browser.
-
-## Cleanup
-
-Remove the deployed resources when finished:
-
-```bash
-kubectl delete -f k8s/service.yaml
-kubectl delete -f k8s/deployment.yaml
-kubectl delete -f k8s/pvc.yaml
-kubectl delete -f k8s/pv.yaml
-kubectl delete -f k8s/secret.yaml
-kubectl delete -f k8s/configmap.yaml
-```
-
-## Instructor Notes
-
-- This project shows how Kubernetes separates configuration from code.
-- It uses `ConfigMap` and `Secret` to pass environment values into pods.
-- It uses a `PersistentVolumeClaim` to mount storage into a container and preserve logs across pod restarts.
-- The Deployment has multiple replicas to demonstrate scaling and pod distribution.
-- The Service is configured as `ClusterIP`, which is appropriate for internal cluster access.
-
-## Key Learning Points
-
-- Building and containerizing a Node.js app.
-- Defining Kubernetes resources for app deployment.
-- Externalizing configuration and secrets.
-- Attaching persistent storage to a pod.
-- Exposing the app through a Kubernetes Service.
-
-## Notes
-
-- The `Secret` value `DB_PASSWORD` is base64 encoded as `bXlwYXNzd29yZA==`, which decodes to `mypassword`.
-- The app stores visit history at `/data/visits.txt`, which is backed by the mounted PVC.
-- The `Deployment` image is `mainamichael/k8s-node-app:v1`; update the image tag if a different registry or tag is used.
 
 ---
 
-If the instructor wants to test the application further, they can scale the deployment and watch how the Service load-balances traffic across replicas.
+# Kubernetes Resources
+
+The following Kubernetes resources were created:
+
+| Resource | Purpose |
+|---|---|
+| Deployment | Manage application Pods |
+| Service | Expose the application |
+| ConfigMap | Store environment variables |
+| Secret | Store sensitive information |
+| Persistent Volume | Provide persistent storage |
+| Persistent Volume Claim | Request storage |
+| HPA | Automatically scale Pods |
+
+---
+
+# Deployment
+
+The application was deployed using a Kubernetes Deployment with multiple replicas.
+
+## Apply Deployment
+
+```bash
+kubectl apply -f deployment.yaml
+```
+
+## Check Deployment
+
+```bash
+kubectl get deployments
+```
+
+---
+
+# ConfigMaps and Secrets
+
+ConfigMaps and Secrets were used to manage application configuration and sensitive information.
+
+## Apply ConfigMap and Secret
+
+```bash
+kubectl apply -f configmap.yaml
+kubectl apply -f secret.yaml
+```
+
+---
+
+# Persistent Storage
+
+Persistent storage was implemented using Persistent Volumes (PV) and Persistent Volume Claims (PVC).
+
+## Apply Storage Configuration
+
+```bash
+kubectl apply -f pv.yaml
+kubectl apply -f pvc.yaml
+```
+
+## Verify Storage
+
+```bash
+kubectl get pv
+kubectl get pvc
+```
+
+---
+
+# Service Exposure
+
+A Kubernetes Service was created to expose the application inside the cluster.
+
+## Apply Service
+
+```bash
+kubectl apply -f service.yaml
+```
+
+## Verify Service
+
+```bash
+kubectl get svc
+```
+
+## Port Forwarding
+
+```bash
+kubectl port-forward service/node-service 3000:80
+```
+
+The application was then accessed through the browser using port 3000.
+
+---
+
+# Horizontal Pod Autoscaler (HPA)
+
+Autoscaling was configured to automatically increase the number of Pods based on CPU usage.
+
+## Create HPA
+
+```bash
+kubectl autoscale deployment node-app --cpu-percent=50 --min=2 --max=5
+```
+
+## Verify HPA
+
+```bash
+kubectl get hpa
+```
+
+---
+
+# Monitoring and Troubleshooting
+
+Kubernetes monitoring and troubleshooting commands were used throughout the project.
+
+## Check Resource Usage
+
+```bash
+kubectl top pods
+```
+
+## View Logs
+
+```bash
+kubectl logs deployment/node-app
+```
+
+## Describe Pods
+
+```bash
+kubectl describe pod <pod-name>
+```
+
+---
+
+
+# Results
+
+The project successfully demonstrated:
+
+- Kubernetes cluster setup
+- Docker containerization
+- Application deployment on Kubernetes
+- Configuration management using ConfigMaps and Secrets
+- Persistent storage implementation
+- Autoscaling using HPA
+- Monitoring and troubleshooting using Kubernetes tools
+
+---
+
+# Screenshots
+
+The following screenshots were captured during the project:
+
+- Kubernetes nodes
+- Running Pods
+- Services
+- HPA scaling
+- Resource monitoring
+- Application logs
+- Browser output of the application
+
+---
+
+# Conclusion
+
+This project provided practical experience in deploying and managing containerized applications using Kubernetes. It demonstrated how Kubernetes handles scaling, storage, configuration management, and monitoring in a cloud-native environment.
